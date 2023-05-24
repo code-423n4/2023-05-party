@@ -1,63 +1,17 @@
-# ✨ So you want to run an audit
+# Party Protocol - Invitational Contest
 
-This `README.md` contains a set of checklists for our audit collaboration.
-
-Your audit will use two repos: 
-- **an _audit_ repo** (this one), which is used for scoping your audit and for providing information to wardens
-- **a _findings_ repo**, where issues are submitted (shared with you after the audit) 
-
-Ultimately, when we launch the audit, this repo will be made public and will contain the smart contracts to be reviewed and all the information needed for audit participants. The findings repo will be made public after the audit report is published and your team has mitigated the identified issues.
-
-Some of the checklists in this doc are for **C4 (🐺)** and some of them are for **you as the audit sponsor (⭐️)**.
-
----
-
-# Repo setup
-
-## ⭐️ Sponsor: Add code to this repo
-
-- [ ] Create a PR to this repo with the below changes:
-- [ ] Provide a self-contained repository with working commands that will build (at least) all in-scope contracts, and commands that will run tests producing gas reports for the relevant contracts.
-- [ ] Make sure your code is thoroughly commented using the [NatSpec format](https://docs.soliditylang.org/en/v0.5.10/natspec-format.html#natspec-format).
-- [ ] Please have final versions of contracts and documentation added/updated in this repo **no less than 24 hours prior to audit start time.**
-- [ ] Be prepared for a 🚨code freeze🚨 for the duration of the audit — important because it establishes a level playing field. We want to ensure everyone's looking at the same code, no matter when they look during the audit. (Note: this includes your own repo, since a PR can leak alpha to our wardens!)
-
-
----
-
-## ⭐️ Sponsor: Edit this README
-
-Under "SPONSORS ADD INFO HERE" heading below, include the following:
-
-- [ ] Modify the bottom of this `README.md` file to describe how your code is supposed to work with links to any relevent documentation and any other criteria/details that the C4 Wardens should keep in mind when reviewing. ([Here's a well-constructed example.](https://github.com/code-423n4/2022-08-foundation#readme))
-  - [ ] When linking, please provide all links as full absolute links versus relative links
-  - [ ] All information should be provided in markdown format (HTML does not render on Code4rena.com)
-- [ ] Under the "Scope" heading, provide the name of each contract and:
-  - [ ] source lines of code (excluding blank lines and comments) in each
-  - [ ] external contracts called in each
-  - [ ] libraries used in each
-- [ ] Describe any novel or unique curve logic or mathematical models implemented in the contracts
-- [ ] Does the token conform to the ERC-20 standard? In what specific ways does it differ?
-- [ ] Describe anything else that adds any special logic that makes your approach unique
-- [ ] Identify any areas of specific concern in reviewing the code
-- [ ] Optional / nice to have: pre-record a high-level overview of your protocol (not just specific smart contract functions). This saves wardens a lot of time wading through documentation.
-- [ ] See also: [this checklist in Notion](https://code4rena.notion.site/Key-info-for-Code4rena-sponsors-f60764c4c4574bbf8e7a6dbd72cc49b4#0cafa01e6201462e9f78677a39e09746)
-- [ ] Delete this checklist and all text above the line below when you're ready.
-
----
-
-# Party DAO Invitational audit details
+## Contest Details
 - Total Prize Pool: $17,050 USDC
-  - HM awards: $11,178 USDC 
-  - QA awards: $1,315 USDC 
-  - Gas awards: $657 USDC 
-  - Judge awards: $3,400 USDC 
+  - HM awards: $11,178 USDC
+  - QA awards: $1,315 USDC
+  - Gas awards: $657 USDC
+  - Judge awards: $3,400 USDC
   - Scout awards: $500 USDC
 - Join [C4 Discord](https://discord.gg/code4rena) to register
 - Submit findings [using the C4 form](https://code4rena.com/contests/2023-05-party-dao-invitational/submit)
 - [Read our guidelines for more details](https://docs.code4rena.com/roles/wardens)
 - Starts May 26, 2023 20:00 UTC
-- Ends May 30, 2023 20:00 UTC 
+- Ends May 30, 2023 20:00 UTC
 
 ## Automated Findings / Publicly Known Issues
 
@@ -65,58 +19,76 @@ Automated findings output for the audit can be found [here](add link to report) 
 
 *Note for C4 wardens: Anything included in the automated findings output is considered a publicly known issue and is ineligible for awards.*
 
-[ ⭐️ SPONSORS ADD INFO HERE ]
+## Overview
 
-# Overview
+Party Protocol aims to be a standard for group coordination, providing on-chain functionality for essential group behaviors:
 
-*Please provide some context about the code being audited, and identify any areas of specific concern in reviewing the code. (This is a good place to link to your docs, if you have them.)*
+1. **Formation:** Assembling a group and combining resources.
 
-# Scope
+1. **Coordination:** Making decisions and taking action together.
 
-*List all files in scope in the table below (along with hyperlinks) -- and feel free to add notes here to emphasize areas of focus.*
+1. **Distribution:** Sharing resources with group members.
 
-*For line of code counts, we recommend using [cloc](https://github.com/AlDanial/cloc).* 
+Rather than pursuing a generic approach to start, we released the first version of the Party Protocol with a focus on NFTs, largely inspired by our initial work on PartyBid. The next release will expand the protocol past that, introducing the new concept of parties that can hold and use ETH.
 
-| Contract | SLOC | Purpose | Libraries used |  
-| ----------- | ----------- | ----------- | ----------- |
-| [contracts/folder/sample.sol](contracts/folder/sample.sol) | 123 | This contract does XYZ | [`@openzeppelin/*`](https://openzeppelin.com/contracts/) |
+The new type of party in this next release which we've referred to as "ETH parties", to distinguish from previous "NFT parties" that were created to acquire NFTs, have less guard rails than NFT parties did. This was by design, it allows ETH parties much more flexibility and purpose. Due to this, however, a 51% attack happening to a party has become much more of a concern.
 
-## Out of scope
+To protect members from the threat of a 51% attack, we have added a "rage quit" ability (like that of MolochDAO's). If this attack were to happen, everyone else in the party could rage quit during the execution delay and take their share of the party's fungible assets with them and the malicious proposal would have no impact.
 
-*List any files/contracts that are out of scope for this audit.*
+Rage quit can is set by host of the party and can be changed at any time, unless it is locked to `ENABLE_RAGEQUIT_PERMENANTLY` or `DISABLE_RAGEQUIT_PERMENANTLY`. To allow it to have more states than just simply on or off, rage quit is implemented as a timestamp until which rage quit is enabled to support a wider set of party configurations. For example, a party that does not wish to enable rage quit by default but wishes to still have the option to enable it for a limited time in case of an emergency to allow members to exit could still do so.
 
-# Additional Context
+This is a critical feature for the protocol, and we want to make sure it is implemented correctly. We are looking for a security audit of the rage quit functionality, particularly its interaction with governance.
 
-*Describe any novel or unique curve logic or mathematical models implemented in the contracts*
+## Documentation
 
-*Sponsor, please confirm/edit the information below.*
+For more information on Party Protocol, see the documentation [here](https://github.com/code-423n4/2023-04-party/tree/main/docs).
 
-## Scoping Details 
-```
-- If you have a public code repo, please share it here:  
-- How many contracts are in scope?:   
-- Total SLoC for these contracts?:  
-- How many external imports are there?:  
-- How many separate interfaces and struct definitions are there for the contracts within scope?:  
-- Does most of your code generally use composition or inheritance?:   
-- How many external calls?:   
-- What is the overall line coverage percentage provided by your tests?:  
-- Is there a need to understand a separate part of the codebase / get context in order to audit this part of the protocol?:   
-- Please describe required context:   
-- Does it use an oracle?:  
-- Does the token conform to the ERC20 standard?:  
-- Are there any novel or unique curve logic or mathematical models?: 
-- Does it use a timelock function?:  
-- Is it an NFT?: 
-- Does it have an AMM?:   
-- Is it a fork of a popular project?:   
-- Does it use rollups?:   
-- Is it multi-chain?:  
-- Does it use a side-chain?: 
+- [Overview](https://github.com/code-423n4/2023-04-party/blob/main/docs/README.md)
+- [Crowdfund](https://github.com/code-423n4/2023-04-party/blob/main/docs/crowdfund.md)
+- [Governance](https://github.com/code-423n4/2023-04-party/blob/main/docs/governance.md)
+
+## Quickstart Command
+
+Here's a one-liner to immediately get started with the codebase. It will clone the project, build it, run every test, and display gas reports:
+
+```bash
+export ETH_RPC_URL='<your_alchemy_mainnet_url_here>' && rm -Rf 2023-04-party || true && git clone https://github.com/code-423n4/2023-04-party -j8 --recurse-submodules && cd 2023-04-party && foundryup && forge install && yarn install && forge test -f $ETH_RPC_URL --gas-report
 ```
 
-# Tests
+## Scope
 
-*Provide every step required to build the project from a fresh git clone, as well as steps to run the tests with a gas report.* 
+- `PartyGovernaneNFT` (only code related to `setRageQuit()` and `rageQuit()`)
+- `PartyGovernance` (only code related to `lastBurnTime`)
 
-*Note: Many wardens run Slither as a first pass for testing.  Please document any known errors with no workaround.* 
+## Scoping Details
+
+```
+- If you have a public code repo, please share it here: There's a private internal PR covering the new features, but the protocol is here: https://github.com/PartyDAO/party-protocol
+- How many contracts are in scope?: 2
+- Total SLoC for these contracts?: 77
+- How many external imports are there?: 0
+- How many separate interfaces and struct definitions are there for the contracts within scope?: 0
+- Does most of your code generally use composition or inheritance?: inheritance
+- How many external calls?: 0
+- What is the overall line coverage percentage provided by your tests?: 80
+- Is there a need to understand a separate part of the codebase / get context in order to audit this part of the protocol?: true
+- Please describe required context: Understanding how party cards are minted and how governance works and how voting power is updated and snapshotted will help with understanding the full scope of what happens when a user rage quits from the party.
+- Does it use an oracle?: no
+- Does the token conform to the ERC20 standard?: no
+- Are there any novel or unique curve logic or mathematical models?: no
+- Does it use a timelock function?: no
+- Is it an NFT?: true
+- Does it have an AMM?: false
+- Is it a fork of a popular project?: false
+- Does it use rollups?: false
+- Is it multi-chain?: false
+- Does it use a side-chain?: false
+```
+
+## Slither Issue
+
+Note that slither does not seem to be working with the repo as-is 🤷, resulting in an enum type not found error:
+
+```
+slither.solc_parsing.exceptions.ParsingError: Type not found enum Crowdfund.CrowdfundLifecycle
+```
