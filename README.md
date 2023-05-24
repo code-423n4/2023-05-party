@@ -29,15 +29,15 @@ Party Protocol aims to be a standard for group coordination, providing on-chain 
 
 1. **Distribution:** Sharing resources with group members.
 
-Rather than pursuing a generic approach to start, we released the first version of the Party Protocol with a focus on NFTs, largely inspired by our initial work on PartyBid. The next release will expand the protocol past that, introducing the new concept of parties that can hold and use ETH.
+The first version of the Party Protocol had a focus on NFTs. The next release will expand the protocol, introducing the new concept of parties that can hold and use ETH to do anything.
 
-The new type of party in this next release which we've referred to as "ETH parties", to distinguish from previous "NFT parties" that were created to acquire NFTs, have less guard rails than NFT parties did. This was by design, it allows ETH parties much more flexibility and purpose. Due to this, however, a 51% attack happening to a party has become much more of a concern.
+The new type of party in this next release is something we've referred to as "ETH parties," to distinguish from previous "NFT parties." ETH parties have fewer restrictions and guardrails than NFT parties did. This is intentional, since it allows ETH parties much more flexibility and freedom. However, this also means that malicious proposals are more of a concern. If a malicious contributor is able to obtain a high amount of voting power in a Party such that they can pass proposals on their own, they could pass a proposal to drain a Party of its assets. Party Hosts already have a veto power to block malicious proposals, but we decided to add additional protections against this type of attack.
 
-To protect members from the threat of a 51% attack, we have added a "rage quit" ability (like that of MolochDAO's). If this attack were to happen, everyone else in the party could rage quit during the execution delay and take their share of the party's fungible assets with them and the malicious proposal would have no impact.
+To protect members from the threat of a 51% attack (or any attack where a single actor has enough votes to pass a proposal), we have added a "rage quit" ability like that of MolochDAO's. If a malicious proposal were to pass, rage quit would allow everyone else in the party to quit during the execution delay, each taking their share of the party's fungible assets with them.
 
-Rage quit can is set by host of the party and can be changed at any time, unless it is locked to `ENABLE_RAGEQUIT_PERMENANTLY` or `DISABLE_RAGEQUIT_PERMENANTLY`. To allow it to have more states than just simply on or off, rage quit is implemented as a timestamp until which rage quit is enabled to support a wider set of party configurations. For example, a party that does not wish to enable rage quit by default but wishes to still have the option to enable it for a limited time in case of an emergency to allow members to exit could still do so.
+Rage quit can be enabled or disabled by a Party Host and can be changed at any time, unless it is locked to `ENABLE_RAGEQUIT_PERMENANTLY` or `DISABLE_RAGEQUIT_PERMENANTLY`. To offer more flexibility than just on or off, rage quit is implemented as a timestamp until which rage quit is enabled. This supports a wider set of party configurations. For example, a Party Host could enable rage quit for a limited time, after which it would be disabled again.
 
-This is a critical feature for the protocol, and we want to make sure it is implemented correctly. We are looking for a security audit of the rage quit functionality, particularly its interaction with governance.
+The rage quit feature is to the protocol, and we want to make sure it is implemented correctly. We are looking for a security audit of the rage quit functionality, particularly its interaction with governance.
 
 ## Documentation
 
@@ -57,7 +57,7 @@ export ETH_RPC_URL='<your_alchemy_mainnet_url_here>' && rm -Rf 2023-04-party || 
 
 ## Scope
 
-- `PartyGovernaneNFT` (only code related to `setRageQuit()` and `rageQuit()`)
+- `PartyGovernanceNFT` (only code related to `setRageQuit()` and `rageQuit()`)
 - `PartyGovernance` (only code related to `lastBurnTime`)
 
 ## Scoping Details
