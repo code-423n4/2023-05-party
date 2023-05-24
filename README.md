@@ -39,6 +39,12 @@ Rage quit can be enabled or disabled by a Party Host and can be changed at any t
 
 The rage quit feature is to the protocol, and we want to make sure it is implemented correctly. We are looking for a security audit of the rage quit functionality, particularly its interaction with governance.
 
+## Known Risks
+
+There are some potential risks with this feature that are known possibilities. These are not considered vulnerabilities as described below:
+1) Ragequitting too many tokens at once might run out of gas and fail. The end user can only ragequit a limited number of tokens.
+2) If a user intentionally or accidentally excludes a token in their ragequit, they forfeit that token and will not be able to claim it.
+
 ## Documentation
 
 For more information on Party Protocol, see the documentation [here](https://github.com/code-423n4/2023-04-party/tree/main/docs).
