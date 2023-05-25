@@ -59,7 +59,7 @@ For more information on Party Protocol, see the documentation [here](https://git
 Here's a one-liner to immediately get started with the codebase. It will clone the project, build it, run every test, and display gas reports:
 
 ```bash
-export ETH_RPC_URL='<your_alchemy_mainnet_url_here>' && rm -Rf 2023-04-party || true && git clone https://github.com/code-423n4/2023-04-party -j8 --recurse-submodules && cd 2023-04-party && foundryup && forge install && yarn install && forge test -f $ETH_RPC_URL --gas-report
+export ETH_RPC_URL='<your_alchemy_mainnet_url_here>' && rm -Rf 2023-05-party || true && git clone https://github.com/code-423n4/2023-05-party -j8 --recurse-submodules && cd 2023-05-party && foundryup && forge install && yarn install && forge test -f $ETH_RPC_URL --gas-report
 ```
 
 ## Scope
