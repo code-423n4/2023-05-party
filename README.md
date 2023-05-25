@@ -65,7 +65,7 @@ export ETH_RPC_URL='<your_alchemy_mainnet_url_here>' && rm -Rf 2023-04-party || 
 ## Scope
 
 - `PartyGovernanceNFT` (new functions `setRageQuit()` and `rageQuit()`)
-- `PartyGovernance` (new function `lastBurnTime`)
+- `PartyGovernance` (new variable `lastBurnTimestamp`)
 - In addition to code in these new functions, any vulnerabilities or unintended effects of these functions related to voting, proposals, or the party's assets is in scope.
 
 ### Differences from Last C4 Contest
