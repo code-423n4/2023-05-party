@@ -68,6 +68,291 @@ export ETH_RPC_URL='<your_alchemy_mainnet_url_here>' && rm -Rf 2023-04-party || 
 - `PartyGovernance` (new function `lastBurnTime`)
 - In addition to code in these new functions, any vulnerabilities or unintended effects of these functions related to voting, proposals, or the party's assets is in scope.
 
+### Differences from Last C4 Contest
+
+The changes from post-mitigation code of the last C4 contest and the current one.
+
+```diff
+diff --git a/contracts/party/PartyGovernance.sol b/contracts/party/PartyGovernance.sol
+index 3b2d2b2..b062e06 100644
+--- a/contracts/party/PartyGovernance.sol
++++ b/contracts/party/PartyGovernance.sol
+@@ -184,6 +184,7 @@ abstract contract PartyGovernance is
+     error InvalidBpsError(uint16 bps);
+     error DistributionsRequireVoteError();
+     error PartyNotStartedError();
++    error CannotRageQuitAndAcceptError();
+
+     uint256 private constant UINT40_HIGH_BIT = 1 << 39;
+     uint96 private constant VETO_VALUE = type(uint96).max;
+@@ -198,6 +199,8 @@ abstract contract PartyGovernance is
+     uint16 public feeBps;
+     /// @notice Distribution fee recipient.
+     address payable public feeRecipient;
++    /// @notice The timestamp of the last time `burn()` was called.
++    uint40 public lastBurnTimestamp;
+     /// @notice The hash of the list of precious NFTs guarded by the party.
+     bytes32 public preciousListHash;
+     /// @notice The last proposal ID that was used. 0 means no proposals have been made.
+@@ -583,6 +586,17 @@ abstract contract PartyGovernance is
+             }
+         }
+
++        // Prevent voting in the same block as the last burn timestamp.
++        // This is to prevent an exploit where a member can burn their card to
++        // reduce the total voting power of the party, then propose and vote in
++        // the same block since `getVotingPowerAt()` uses `values.proposedTime - 1`.
++        // This would allow them to use the voting power snapshot just before
++        // their card was burned to vote, potentially passing a proposal that
++        // would have otherwise not passed.
++        if (lastBurnTimestamp == block.timestamp) {
++            revert CannotRageQuitAndAcceptError();
++        }
++
+         // Cannot vote twice.
+         if (info.hasVoted[msg.sender]) {
+             revert AlreadyVotedError(msg.sender);
+diff --git a/contracts/party/PartyGovernanceNFT.sol b/contracts/party/PartyGovernanceNFT.sol
+index c8de1f3..10aecc2 100644
+--- a/contracts/party/PartyGovernanceNFT.sol
++++ b/contracts/party/PartyGovernanceNFT.sol
+@@ -14,28 +15,48 @@ import "../renderers/RendererStorage.sol";
+ contract PartyGovernanceNFT is PartyGovernance, ERC721, IERC2981 {
+     using LibSafeCast for uint256;
+     using LibSafeCast for uint96;
++    using LibERC20Compat for IERC20;
++    using LibAddress for address payable;
+
+     error OnlyAuthorityError();
+     error OnlySelfError();
+     error UnauthorizedToBurnError();
++    error FixedRageQuitTimestampError(uint40 rageQuitTimestamp);
++    error CannotRageQuitError(uint40 rageQuitTimestamp);
++    error CannotDisableRageQuitAfterInitializationError();
++    error InvalidTokenOrderError();
+
+     event AuthorityAdded(address indexed authority);
+     event AuthorityRemoved(address indexed authority);
++    event RageQuitSet(uint40 oldRageQuitTimestamp, uint40 newRageQuitTimestamp);
++    event RageQuit(uint256[] indexed tokenIds, IERC20[] withdrawTokens, address receiver);
++
++    uint40 private constant ENABLE_RAGEQUIT_PERMANENTLY = 0x6b5b567bfe; // uint40(uint256(keccak256("ENABLE_RAGEQUIT_PERMANENTLY")))
++    uint40 private constant DISABLE_RAGEQUIT_PERMANENTLY = 0xab2cb21860; // uint40(uint256(keccak256("DISABLE_RAGEQUIT_PERMANENTLY")))
++
++    // Token address used to indicate ETH.
++    address private constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
+     // The `Globals` contract storing global configuration values. This contract
+-    // is immutable and it’s address will never change.
++    // is immutable and its address will never change.
+     IGlobals private immutable _GLOBALS;
+
+-    /// @notice Address with authority to mint cards and update voting power for the party.
+-    mapping(address => bool) public isAuthority;
+     /// @notice The number of tokens that have been minted.
+     uint96 public tokenCount;
+     /// @notice The total minted voting power.
+     ///         Capped to `_governanceValues.totalVotingPower` unless minting
+     ///         party cards for initial crowdfund.
+     uint96 public mintedVotingPower;
++    /// @notice The timestamp until which ragequit is enabled. Can be set to the
++    ///         `ENABLE_RAGEQUIT_PERMANENTLY`/`DISABLE_RAGEQUIT_PERMANENTLY`
++    ///         values to enable/disable ragequit permanently.
++    ///         `DISABLE_RAGEQUIT_PERMANENTLY` can only be set during
++    ///         initialization.
++    uint40 public rageQuitTimestamp;
+     /// @notice The voting power of `tokenId`.
+     mapping(uint256 => uint256) public votingPowerByTokenId;
++    /// @notice Address with authority to mint cards and update voting power for the party.
++    mapping(address => bool) public isAuthority;
+
+     modifier onlyAuthority() {
+         if (!isAuthority[msg.sender]) {
+@@ -51,9 +72,9 @@ contract PartyGovernanceNFT is PartyGovernance, ERC721, IERC2981 {
+         _;
+     }
+
+-    // Set the `Globals` contract. The name of symbol of ERC721 does not matter;
++    // Set the `Globals` contract. The name or symbol of ERC721 does not matter;
+     // it will be set in `_initialize()`.
+-    constructor(IGlobals globals) PartyGovernance(globals) ERC721("", "") {
++    constructor(IGlobals globals) payable PartyGovernance(globals) ERC721("", "") {
+         _GLOBALS = globals;
+     }
+
+@@ -66,7 +87,8 @@ contract PartyGovernanceNFT is PartyGovernance, ERC721, IERC2981 {
+         ProposalStorage.ProposalEngineOpts memory proposalEngineOpts,
+         IERC721[] memory preciousTokens,
+         uint256[] memory preciousTokenIds,
+-        address[] memory authorities
++        address[] memory authorities,
++        uint40 rageQuitTimestamp_
+     ) internal {
+         PartyGovernance._initialize(
+             governanceOpts,
+@@ -76,8 +98,11 @@ contract PartyGovernanceNFT is PartyGovernance, ERC721, IERC2981 {
+         );
+         name = name_;
+         symbol = symbol_;
+-        for (uint256 i; i < authorities.length; ++i) {
+-            isAuthority[authorities[i]] = true;
++        rageQuitTimestamp = rageQuitTimestamp_;
++        unchecked {
++            for (uint256 i; i < authorities.length; ++i) {
++                isAuthority[authorities[i]] = true;
++            }
+         }
+         if (customizationPresetId != 0) {
+             RendererStorage(_GLOBALS.getAddress(LibGlobals.GLOBAL_RENDERER_STORAGE))
+@@ -122,7 +147,7 @@ contract PartyGovernanceNFT is PartyGovernance, ERC721, IERC2981 {
+     }
+
+     /// @inheritdoc ITokenDistributorParty
+-    function getDistributionShareOf(uint256 tokenId) external view returns (uint256) {
++    function getDistributionShareOf(uint256 tokenId) public view returns (uint256) {
+         uint256 totalVotingPower = _governanceValues.totalVotingPower;
+
+         if (totalVotingPower == 0) {
+@@ -143,8 +168,9 @@ contract PartyGovernanceNFT is PartyGovernance, ERC721, IERC2981 {
+         uint256 votingPower,
+         address delegate
+     ) external onlyAuthority onlyDelegateCall returns (uint256 tokenId) {
+-        (uint96 tokenCount_, uint96 mintedVotingPower_) = (tokenCount, mintedVotingPower);
++        uint96 mintedVotingPower_ = mintedVotingPower;
+         uint96 totalVotingPower = _governanceValues.totalVotingPower;
++
+         // Cap voting power to remaining unminted voting power supply.
+         uint96 votingPower_ = votingPower.safeCastUint256ToUint96();
+         // Allow minting past total voting power if minting party cards for
+@@ -154,7 +180,9 @@ contract PartyGovernanceNFT is PartyGovernance, ERC721, IERC2981 {
+         }
+
+         // Update state.
+-        tokenId = tokenCount = tokenCount_ + 1;
++        unchecked {
++            tokenId = ++tokenCount;
++        }
+         mintedVotingPower += votingPower_;
+         votingPowerByTokenId[tokenId] = votingPower_;
+
+@@ -202,9 +230,9 @@ contract PartyGovernanceNFT is PartyGovernance, ERC721, IERC2981 {
+         _governanceValues.totalVotingPower += newVotingPower;
+     }
+
+-    /// @notice Burn a NFT and remove its voting power.
++    /// @notice Burn a governance NFT and remove its voting power.
+     /// @param tokenId The ID of the NFT to burn.
+-    function burn(uint256 tokenId) external onlyDelegateCall {
++    function burn(uint256 tokenId) public onlyDelegateCall {
+         address owner = ownerOf(tokenId);
+         uint96 totalVotingPower = _governanceValues.totalVotingPower;
+         bool authority = isAuthority[msg.sender];
+@@ -219,6 +247,9 @@ contract PartyGovernanceNFT is PartyGovernance, ERC721, IERC2981 {
+             if (totalVotingPower != 0 || !authority) revert UnauthorizedToBurnError();
+         }
+
++        // Update last burn timestamp.
++        lastBurnTimestamp = uint40(block.timestamp);
++
+         uint96 votingPower = votingPowerByTokenId[tokenId].safeCastUint256ToUint96();
+         mintedVotingPower -= votingPower;
+         delete votingPowerByTokenId[tokenId];
+@@ -234,6 +265,93 @@ contract PartyGovernanceNFT is PartyGovernance, ERC721, IERC2981 {
+         _burn(tokenId);
+     }
+
++    /// @notice Set the timestamp until which ragequit is enabled.
++    /// @param newRageQuitTimestamp The new ragequit timestamp.
++    function setRageQuit(uint40 newRageQuitTimestamp) external onlyHost {
++        uint40 oldRageQuitTimestamp = rageQuitTimestamp;
++
++        // Prevent disabling ragequit after initialization.
++        if (newRageQuitTimestamp == DISABLE_RAGEQUIT_PERMANENTLY) {
++            revert CannotDisableRageQuitAfterInitializationError();
++        }
++
++        // Prevent setting timestamp if it is permanently enabled/disabled.
++        if (
++            oldRageQuitTimestamp == ENABLE_RAGEQUIT_PERMANENTLY ||
++            oldRageQuitTimestamp == DISABLE_RAGEQUIT_PERMANENTLY
++        ) {
++            revert FixedRageQuitTimestampError(oldRageQuitTimestamp);
++        }
++
++        emit RageQuitSet(oldRageQuitTimestamp, rageQuitTimestamp = newRageQuitTimestamp);
++    }
++
++    /// @notice Burn a governance NFT and withdraw a fair share of fungible tokens from the party.
++    /// @param tokenIds The IDs of the governance NFTs to burn.
++    /// @param withdrawTokens The fungible tokens to withdraw.
++    /// @param receiver The address to receive the withdrawn tokens.
++    function rageQuit(
++        uint256[] calldata tokenIds,
++        IERC20[] calldata withdrawTokens,
++        address receiver
++    ) external {
++        // Check if ragequit is allowed.
++        uint40 currentRageQuitTimestamp = rageQuitTimestamp;
++        if (currentRageQuitTimestamp != ENABLE_RAGEQUIT_PERMANENTLY) {
++            if (
++                currentRageQuitTimestamp == DISABLE_RAGEQUIT_PERMANENTLY ||
++                currentRageQuitTimestamp < block.timestamp
++            ) {
++                revert CannotRageQuitError(currentRageQuitTimestamp);
++            }
++        }
++
++        // Used as a reentrancy guard. Will be updated back after ragequit.
++        delete rageQuitTimestamp;
++
++        for (uint256 i; i < tokenIds.length; ++i) {
++            uint256 tokenId = tokenIds[i];
++
++            // Must be retrieved before burning the token.
++            uint256 shareOfVotingPower = getDistributionShareOf(tokenId);
++
++            // Burn caller's party card. This will revert if caller is not the owner
++            // of the card.
++            burn(tokenId);
++
++            // Withdraw fair share of tokens from the party.
++            IERC20 prevToken;
++            for (uint256 j; j < withdrawTokens.length; ++j) {
++                IERC20 token = withdrawTokens[j];
++
++                // Prevent null and duplicate transfers.
++                if (prevToken >= token) revert InvalidTokenOrderError();
++
++                prevToken = token;
++
++                // Check if token is ETH.
++                if (address(token) == ETH_ADDRESS) {
++                    // Transfer fair share of ETH to receiver.
++                    uint256 amount = (address(this).balance * shareOfVotingPower) / 1e18;
++                    if (amount != 0) {
++                        payable(receiver).transferEth(amount);
++                    }
++                } else {
++                    // Transfer fair share of tokens to receiver.
++                    uint256 amount = (token.balanceOf(address(this)) * shareOfVotingPower) / 1e18;
++                    if (amount != 0) {
++                        token.compatTransfer(receiver, amount);
++                    }
++                }
++            }
++        }
++
++        // Update ragequit timestamp back to before.
++        rageQuitTimestamp = currentRageQuitTimestamp;
++
++        emit RageQuit(tokenIds, withdrawTokens, receiver);
++    }
++
+     /// @inheritdoc ERC721
+     function transferFrom(
+         address owner,
+```
+
 ### Files in scope
 |File|[SLOC](#nowhere "(nSLOC, SLOC, Lines)")|Description and [Coverage](#nowhere "(Lines hit / Total)")|Libraries|
 |:-|:-:|:-|:-|
