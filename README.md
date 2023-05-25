@@ -17,6 +17,13 @@
 
 Automated findings output for the audit can be found [here](add link to report) within 24 hours of audit opening.
 
+### Publicly Known Issues
+There are some potential risks with this feature that are known possibilities. These are not considered vulnerabilities and are described below:
+
+1. Ragequitting too many tokens at once might run out of gas and fail. The end user can only ragequit a limited number of tokens.
+2. If a user intentionally or accidentally excludes a token in their ragequit, they forfeit that token and will not be able to claim it.
+3. After a user rage quits, the votes delegated to them will not be undone. Those who delegated to them will need to redelegate their votes.
+
 *Note for C4 wardens: Anything included in the automated findings output is considered a publicly known issue and is ineligible for awards.*
 
 ## Overview
@@ -38,14 +45,6 @@ To protect members from the threat of a 51% attack (or any attack where a single
 Rage quit can be enabled or disabled by a Party Host and can be changed at any time, unless it is locked to `ENABLE_RAGEQUIT_PERMENANTLY` or `DISABLE_RAGEQUIT_PERMENANTLY`. To offer more flexibility than just on or off, rage quit is implemented as a timestamp until which rage quit is enabled. This supports a wider set of party configurations. For example, a Party Host could enable rage quit for a limited time, after which it would be disabled again.
 
 The rage quit feature is to the protocol, and we want to make sure it is implemented correctly. We are looking for a security audit of the rage quit functionality, particularly its interaction with governance.
-
-## Known Risks
-
-There are some potential risks with this feature that are known possibilities. These are not considered vulnerabilities and are described below:
-
-1. Ragequitting too many tokens at once might run out of gas and fail. The end user can only ragequit a limited number of tokens.
-2. If a user intentionally or accidentally excludes a token in their ragequit, they forfeit that token and will not be able to claim it.
-3. After a user rage quits, the votes delegated to them will not be undone. Those who delegated to them will need to redelegate their votes.
 
 ## Documentation
 
