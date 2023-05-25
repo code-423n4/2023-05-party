@@ -53,7 +53,8 @@ For more information on Party Protocol, see the documentation [here](https://git
 - [Overview](https://github.com/code-423n4/2023-04-party/blob/main/docs/README.md)
 - [Crowdfund](https://github.com/code-423n4/2023-04-party/blob/main/docs/crowdfund.md)
 - [Governance](https://github.com/code-423n4/2023-04-party/blob/main/docs/governance.md)
-- [Prior Audit Repo](https://github.com/code-423n4/2023-04-party)
+
+- [Party Audit Repo April 2023](https://github.com/code-423n4/2023-04-party)
 
 ## Quickstart Command
 
