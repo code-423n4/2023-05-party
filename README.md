@@ -66,7 +66,7 @@ export ETH_RPC_URL='<your_alchemy_mainnet_url_here>' && rm -Rf 2023-04-party || 
 
 - `PartyGovernanceNFT` (new functions `setRageQuit()` and `rageQuit()`)
 - `PartyGovernance` (new function `lastBurnTime`)
-- In addition to code in these new functions, any vulnerabilities or unintended effects of these functions related to voting or the party's assets is in scope.
+- In addition to code in these new functions, any vulnerabilities or unintended effects of these functions related to voting, proposals, or the party's assets is in scope.
 
 ### Files in scope
 |File|[SLOC](#nowhere "(nSLOC, SLOC, Lines)")|Description and [Coverage](#nowhere "(Lines hit / Total)")|Libraries|
