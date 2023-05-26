@@ -15,7 +15,7 @@
 
 ## Automated Findings / Publicly Known Issues
 
-Automated findings output for the audit can be found [here]([add link to report](https://gist.github.com/romeroadrian/c5451b928cd416ddf033bedd26cf0b80) within 24 hours of audit opening.
+Automated findings output for the audit can be found [here](https://gist.github.com/romeroadrian/c5451b928cd416ddf033bedd26cf0b80) within 24 hours of audit opening.
 
 ### Publicly Known Issues
 There are some potential risks with this feature that are known possibilities. These are not considered vulnerabilities and are described below:
