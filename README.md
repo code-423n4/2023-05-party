@@ -48,12 +48,12 @@ The rage quit feature is to the protocol, and we want to make sure it is impleme
 
 ## Documentation
 
-For more information on Party Protocol, see the documentation [here](https://github.com/code-423n4/2023-04-party/tree/main/docs).
+For more information on Party Protocol, see the documentation [here](https://github.com/code-423n4/2023-05-party/tree/main/docs).
 
-- [Overview](https://github.com/code-423n4/2023-04-party/blob/main/docs/README.md)
-- [Crowdfund](https://github.com/code-423n4/2023-04-party/blob/main/docs/crowdfund.md)
-- [Governance](https://github.com/code-423n4/2023-04-party/blob/main/docs/governance.md)
-- [Prior C4 Audit Rep](https://github.com/code-423n4/2023-04-party)
+- [Overview](https://github.com/code-423n4/2023-05-party/blob/main/docs/README.md)
+- [Crowdfund](https://github.com/code-423n4/2023-05-party/blob/main/docs/crowdfund.md)
+- [Governance](https://github.com/code-423n4/2023-05-party/blob/main/docs/governance.md)
+- [Prior C4 Audit Repo](https://github.com/code-423n4/2023-04-party)
 
 ## Quickstart Command
 
